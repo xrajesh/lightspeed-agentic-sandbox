@@ -41,19 +41,17 @@ Implementation spec for compliance audit logging in the agentic sandbox. Parent 
 
 ### Configuration
 
-10. The sandbox receives audit config from the operator via environment variable or config mount. When audit is enabled, all events emit. When disabled, no audit events emit.
+10. The sandbox receives audit config from the lightspeed-operator via environment variables. When audit is enabled, all events emit. When disabled, no audit events emit.
 
-11. When an OTEL tracing endpoint is configured (passed from operator), the sandbox configures an OTLP span exporter. When absent, a no-op exporter is used. Structured JSON to stdout always emits when audit is enabled.
+11. Structured JSON to stdout always emits when audit is enabled. This is non-negotiable for Kubernetes log access.
 
-### OTLP Log Emission (Templog)
+### OTLP Emission
 
-12. When the OTLP log endpoint environment variable is set (wired by the lightspeed-operator when `spec.templog` is enabled), the sandbox MUST also emit all audit events as OTLP log records to that endpoint. This is in addition to stdout — dual emission.
+12. The sandbox always emits OTLP (logs + traces) to the Collector endpoint (env var set by the lightspeed-operator). The Collector is always deployed.
 
 13. Each OTLP log record MUST carry: `trace_id` in the log record's trace context (received via `traceparent` header), `event` as a log record attribute, and the full structured JSON audit event as the log record body.
 
-14. The OTLP log endpoint is independent of the OTEL tracing endpoint. Both can be active simultaneously.
-
-15. When the OTLP log endpoint is absent, no OTLP log records are emitted. Graceful degradation.
+14. The Collector handles routing: logs to Postgres (when templog enabled), traces to external endpoint (when configured). The sandbox does not need to know what the Collector does with the telemetry.
 
 ### Structured JSON Format
 
